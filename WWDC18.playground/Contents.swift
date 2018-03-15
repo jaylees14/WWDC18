@@ -6,14 +6,6 @@ public class ConnectFourViewController: UIViewController, ARSCNViewDelegate {
     var sceneView: ARSCNView!
     var scene: SCNScene!
 
-    public override func viewDidLoad() {
-        super.viewDidLoad()
-        sceneView = ARSCNView(frame: view.frame)
-        scene = SCNScene()
-        sceneView.scene = scene
-        sceneView.showsStatistics = true
-        sceneView.delegate = self
-    }
 
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -21,10 +13,30 @@ public class ConnectFourViewController: UIViewController, ARSCNViewDelegate {
             print("AR tracking not supported")
             return
         }
+        sceneView = ARSCNView(frame: view.frame)
+        scene = SCNScene()
+        sceneView.scene = scene
+        sceneView.showsStatistics = true
+        sceneView.delegate = self
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = .horizontal
         sceneView.session.run(configuration)
         self.view.addSubview(sceneView)
+        
+        do {
+            guard let daePath = Bundle.main.url(forResource: "Connect4", withExtension: "scn") else {
+                fatalError("No file at path")
+            }
+            let model = try SCNScene(url: daePath, options: nil)
+            let tempNode = SCNNode()
+            tempNode.addChildNode(model.rootNode)
+            tempNode.position = SCNVector3Zero
+            tempNode.scale = SCNVector3(0.001, 0.001, 0.001)
+            tempNode.eulerAngles.x = degreesToRadians(-90)
+            scene.rootNode.addChildNode(tempNode)
+        } catch let e {
+            fatalError(e.localizedDescription)
+        }
     }
     
     
@@ -80,6 +92,13 @@ public class ConnectFourViewController: UIViewController, ARSCNViewDelegate {
     }
 }
 
+func degreesToRadians(_ degrees: Float) -> Float {
+    return degrees * Float.pi/180
+}
+
+func radiansToDegrees(_ radians: Float) -> Float {
+    return radians / Float.pi * 180.0
+}
 
 
 
