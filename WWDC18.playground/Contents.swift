@@ -11,82 +11,31 @@ import ARKit
 /// (1,0) | (1,1) | (1,2) | (1,3) | (1,4) | (1,5) | (1,6)
 /// (0,0) | (0,1) | (0,2) | (0,3) | (0,4) | (0,5) | (0,6)
 
-
-
-
-public class ConnectFourViewController: UIViewController, ARSCNViewDelegate {
-    var sceneView: ARSCNView!
-    var scene: SCNScene!
-    var gameLayout: GameLayout?
-    var gameLogic: GameLogic?
-
-    public override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-//        guard ARWorldTrackingConfiguration.isSupported else {
-//            fatalError("AR is not supported on this device.")
-//        }
-//
-//        //Initialise the scene
-//        sceneView = ARSCNView(frame: view.frame)
-//        scene = SCNScene()
-//        sceneView.scene = scene
-//        sceneView.showsStatistics = true
-//        sceneView.delegate = self
-//
-//        //Add AR Tracking
-//        let configuration = ARWorldTrackingConfiguration()
-//        configuration.planeDetection = .horizontal
-//        sceneView.session.run(configuration)
-//        self.view.addSubview(sceneView)
-        
-        gameLayout = GameLayout(anchor: nil)
-        gameLogic = GameLogic()
-        gameLayout!.logicDelegate = gameLogic
-        gameLogic!.layoutDelegate = gameLayout
-    }
-    
-    
-    //MARK: - ARSCNViewDelegate
-    public func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-        //Take the first plane detected and draw the game board
-        //After the first, we can ignore any further planes
-        guard let planeAnchor = anchor as? ARPlaneAnchor, gameLayout == nil else { return }
-        
-        //Generate the board and logic handler
-//        gameLayout = GameLayout(anchor: planeAnchor)
-//        gameLogic = GameLogic()
-//        gameLayout!.logicDelegate = gameLogic
-//        gameLogic!.layoutDelegate = gameLayout
-        
-//        //Add board to the view
-//        let gameNode = gameLayout!.generate()
-//        scene.rootNode.addChildNode(gameNode)
-    }
-}
-
 public class GameLayout: GameLayoutDelegate {
     
     //TODO: Make this not optional after testing
-    private var anchor: ARPlaneAnchor?
+    private var anchor: ARPlaneAnchor
     private var columnSelectors: [SCNNode]
+    private var board: SCNNode?
     public var logicDelegate: GameLogicDelegate?
     public let boardSize = (width: 7, height: 6)
     
     
-    public init(anchor: ARPlaneAnchor?){
+    public init(anchor: ARPlaneAnchor){
         self.anchor = anchor
         self.columnSelectors = [SCNNode]()
     }
     
     public func generate() -> SCNNode {
-        let board = generateBoard()
-        addColumnSelectors(to: board)
-        return board
+        board = generateBoard()
+        //addColumnSelectors(to: board!)
+        return board!
     }
     
-    //Emulate the dropping of the puck onto the board
-    public func dropPuck(player: Player, column: Int){
-        
+    public func updateIfNecessary(anchor: ARPlaneAnchor){
+        if anchor.identifier == self.anchor.identifier {
+            self.anchor = anchor
+        }
     }
     
     //Create and correctly layout a board from the SCN file
@@ -97,7 +46,7 @@ public class GameLayout: GameLayoutDelegate {
         }
         let tempNode = SCNNode()
         tempNode.addChildNode(model.rootNode)
-        tempNode.position = SCNVector3Zero
+        tempNode.position = SCNVector3(anchor.center)
         tempNode.scale = SCNVector3(0.001, 0.001, 0.001)
         tempNode.eulerAngles.x = degreesToRadians(-90)
         return tempNode
@@ -118,7 +67,7 @@ public class GameLayout: GameLayoutDelegate {
             columnSelectors.append(arrowNode)
         }
     }
-    
+
     
     
     //MARK: - GameLayoutDelegate
@@ -134,6 +83,72 @@ public class GameLayout: GameLayoutDelegate {
         
     }
 }
+
+public class ConnectFourViewController: UIViewController, ARSCNViewDelegate {
+    var sceneView: ARSCNView!
+    var scene: SCNScene!
+    var gameLayout: GameLayout?
+    var gameLogic: GameLogic?
+
+    public override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard ARWorldTrackingConfiguration.isSupported else {
+            fatalError("AR is not supported on this device.")
+        }
+
+        //Initialise the scene
+        sceneView = ARSCNView(frame: view.frame)
+        scene = SCNScene()
+        sceneView.scene = scene
+        sceneView.showsStatistics = true
+        sceneView.delegate = self
+
+        //Add AR Tracking
+        let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = .horizontal
+        sceneView.session.run(configuration)
+        self.view.addSubview(sceneView)
+    }
+    
+    //MARK: - ARSCNViewDelegate
+    public func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        //Take the first plane detected and draw the game board
+        //After the first, we can ignore any further planes
+        guard let planeAnchor = anchor as? ARPlaneAnchor, gameLayout == nil else { return }
+        
+        // Generate the board and logic handler
+        //Causes a bug on latest version of playgrounds if not handled like this
+        //Since we have just initialised them, we can assert the existence
+        //of both the layout and logic
+        DispatchQueue.main.async {
+            self.gameLayout = GameLayout(anchor: planeAnchor)
+            self.gameLogic = GameLogic()
+            self.gameLayout!.logicDelegate = self.gameLogic
+            self.gameLogic!.layoutDelegate = self.gameLayout
+            let gameNode = self.gameLayout!.generate()
+            node.addChildNode(gameNode)
+        }
+        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
+        plane.firstMaterial?.diffuse.contents = UIColor.white.withAlphaComponent(0.5)
+        let planeNode = SCNNode(geometry: plane)
+        planeNode.position = SCNVector3Make(planeAnchor.center.x, 0, planeAnchor.center.z)
+        planeNode.transform = SCNMatrix4MakeRotation(-Float.pi / 2, 1, 0, 0)
+        node.addChildNode(planeNode)
+    }
+    
+    public func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
+        gameLayout?.updateIfNecessary(anchor: planeAnchor)
+        if node.childNodes.count >= 2 {
+            if let plane = node.childNodes[1].geometry as? SCNPlane {
+                plane.width = CGFloat(planeAnchor.extent.x)
+                plane.height = CGFloat(planeAnchor.extent.z)
+            }
+        }
+    }
+}
+
+
 
 
 let viewController = ConnectFourViewController()
