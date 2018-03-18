@@ -2,17 +2,7 @@ import PlaygroundSupport
 import UIKit
 import SceneKit
 
-///Each position on the board is represented as a 2D-coordinate, with the origin in the bottom left
-///
-/// (5,0) | (5,1) | (5,2) | (5,3) | (5,4) | (5,5) | (5,6)
-/// (4,0) | (4,1) | (4,2) | (4,3) | (4,4) | (4,5) | (4,6)
-/// (3,0) | (3,1) | (3,2) | (3,3) | (3,4) | (3,5) | (3,6)
-/// (2,0) | (2,1) | (2,2) | (2,3) | (2,4) | (2,5) | (2,6)
-/// (1,0) | (1,1) | (1,2) | (1,3) | (1,4) | (1,5) | (1,6)
-/// (0,0) | (0,1) | (0,2) | (0,3) | (0,4) | (0,5) | (0,6)
-
 public class GameLayout: GameLayoutDelegate {
-    
     private var columnSelectors: [SCNNode]
     private var board: SCNNode?
     public var logicDelegate: GameLogicDelegate?
@@ -24,7 +14,18 @@ public class GameLayout: GameLayoutDelegate {
     }
     
     public func generate() -> SCNNode {
-        board = generateBoard()
+        guard let path = Bundle.main.url(forResource: "Connect4", withExtension: "scn") else {
+            fatalError("Could not find path for board")
+        }
+        guard let model = try? SCNScene(url: path, options: nil) else {
+            fatalError("Board could not be initialized.")
+        }
+        
+        board = SCNNode()
+        board!.addChildNode(model.rootNode)
+        board!.scale = SCNVector3(0.001, 0.001, 0.001)
+        board!.position = SCNVector3(0,0,0)
+        board!.eulerAngles.x = degreesToRadians(-90)
         addColumnSelectors()
         return board!
     }
@@ -34,27 +35,9 @@ public class GameLayout: GameLayoutDelegate {
             let column = columnSelectors.index(of: node) else {
                 return
         }
-        dropPuck(player: .yellow, column: column)
-        logicDelegate?.movePlayed(player: .red, column: column)
+        logicDelegate?.movePlayed(column: column)
     }
-    
-    //Create and correctly layout a board from the SCN file
-    private func generateBoard() -> SCNNode {
-        guard let path = Bundle.main.url(forResource: "Connect4", withExtension: "scn") else {
-            fatalError("Could not find path for board")
-        }
-        guard let model = try? SCNScene(url: path, options: nil) else {
-            fatalError("Board could not be initialized.")
-        }
-        
-        let tempNode = SCNNode()
-        tempNode.addChildNode(model.rootNode)
-        tempNode.scale = SCNVector3(0.001, 0.001, 0.001)
-        tempNode.position = SCNVector3(0,0,0)
-        tempNode.eulerAngles.x = degreesToRadians(-90)
-        return tempNode
-    }
-    
+
     //Draw the column selector (▽) to the board
     private func addColumnSelectors(){
         for col in 0...boardSize.width-1 {
@@ -72,9 +55,9 @@ public class GameLayout: GameLayoutDelegate {
         }
     }
 
-    
-    //Drop a coloured puck at a given column
-    private func dropPuck(player: Player, column: Int){
+
+    //MARK: - GameLayoutDelegate    
+    public func makeMove(player: Player, column: Int, row: Int){
         let resource = player == .red ? "RedPuc" : "YellowPuc"
         guard let path = Bundle.main.url(forResource: resource, withExtension: "scn") else {
             fatalError("Could not find path for board")
@@ -85,24 +68,34 @@ public class GameLayout: GameLayoutDelegate {
         
         let puckNode = SCNNode()
         puckNode.addChildNode(model.rootNode)
-        puckNode.scale = SCNVector3(0.5, 0.5, 0.5)
-        puckNode.position = SCNVector3(x: Float(-87+(48*column)), y: -3, z: 185)
+        puckNode.scale = SCNVector3(0.48, 0.48, 0.48)
+        //Place it one row above thet top of the board
+        puckNode.position = SCNVector3(x: Float(-80+(47*column)), y: -1, z: 105+(47*6))
         puckNode.eulerAngles.x = degreesToRadians(-90)
         board?.addChildNode(puckNode)
+        drop(puckNode, to: row)
+    }
+    
+    private func drop(_ node: SCNNode, to row: Int){
+        //We always want them to be travelling at the same speed
+        //So we use Time = Distance/Speed
+        let distance = Float(47*(6-row))
+        let speed: Float = 200.0
+        let action = SCNAction.move(by: SCNVector3Make(0, 0, -distance), duration: TimeInterval(distance/speed))
+        node.runAction(action)
     }
     
     
-    //MARK: - GameLayoutDelegate
     public func allMovesMade(for column: Int){
         columnSelectors[column].removeFromParentNode()
     }
     
     public func gameWon(by player: Player){
-        
+        print("Game won by \(player)")
     }
     
     public func gameDrawn(){
-        
+        print("Game drawn")
     }
 }
 
