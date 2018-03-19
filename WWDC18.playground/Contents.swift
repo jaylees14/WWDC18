@@ -2,87 +2,100 @@ import PlaygroundSupport
 import UIKit
 import SceneKit
 
+extension SCNVector3 {
+    init(repeating value: Float){
+        self.init(value, value, value)
+    }
+}
+
+public enum SceneModel: String {
+    case connectFour = "Connect4"
+    case triangle = "Triangle"
+    case redPuck = "RedPuc"
+    case yellowPuck = "YellowPuc"
+}
+
 public class GameLayout: GameLayoutDelegate {
     private var columnSelectors: [SCNNode]
     private var board: SCNNode?
     public var logicDelegate: GameLogicDelegate?
     public let boardSize = (width: 7, height: 6)
     
-    
     public init(){
         self.columnSelectors = [SCNNode]()
     }
     
     public func generate() -> SCNNode {
-        guard let path = Bundle.main.url(forResource: "Connect4", withExtension: "scn") else {
-            fatalError("Could not find path for board")
-        }
-        guard let model = try? SCNScene(url: path, options: nil) else {
-            fatalError("Board could not be initialized.")
-        }
-        
         board = SCNNode()
-        board!.addChildNode(model.rootNode)
-        board!.scale = SCNVector3(0.001, 0.001, 0.001)
-        board!.position = SCNVector3(0,0,0)
-        board!.eulerAngles.x = degreesToRadians(-90)
-        addColumnSelectors()
+        if let model = getModel(.connectFour){
+            board!.addChildNode(model)
+            board!.scale = SCNVector3(repeating: 0.001)
+            board!.position = SCNVector3(0,0,0)
+            board!.eulerAngles.x = degreesToRadians(-90)
+            board!.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
+            addColumnSelectors()
+        }
         return board!
     }
     
     public func processTouch(_ touch: SCNHitTestResult){
-        guard let node = columnSelectors.filter({$0.childNodes.contains(touch.node)}).first,
-            let column = columnSelectors.index(of: node) else {
-                return
+        if let node = columnSelectors.filter({$0.childNodes.contains(touch.node)}).first,
+            let column = columnSelectors.index(of: node) {
+            logicDelegate?.movePlayed(column: column)
         }
-        logicDelegate?.movePlayed(column: column)
     }
 
     //Draw the column selector (▽) to the board
     private func addColumnSelectors(){
-        for col in 0...boardSize.width-1 {
-            guard let daePath = Bundle.main.url(forResource: "Triangle", withExtension: "scn"),
-                let model = try? SCNScene(url: daePath, options: nil) else {
-                    fatalError("Board could not be initialized.")
+        for index in 0..<boardSize.width {
+            if let model = getModel(.triangle){
+                let node = SCNNode()
+                node.addChildNode(model)
+                node.scale = SCNVector3(repeating: 0.5)
+                node.position = SCNVector3(x: Float(10+(47*index)), y: 0, z: 385)
+                node.eulerAngles.x = degreesToRadians(-90)
+                columnSelectors.append(model)
+                board?.addChildNode(node)
             }
-            let arrowNode = SCNNode()
-            arrowNode.addChildNode(model.rootNode)
-            arrowNode.scale = SCNVector3(0.5, 0.5, 0.5)
-            arrowNode.position = SCNVector3(x: Float(10+(47*col)), y: 0, z: 385)
-            arrowNode.eulerAngles.x = degreesToRadians(-90)
-            columnSelectors.append(model.rootNode)
-            board?.addChildNode(arrowNode)
         }
+    }
+        
+    private func getModel(_ model: SceneModel) -> SCNNode? {
+        guard let daePath = Bundle.main.url(forResource: model.rawValue, withExtension: "scn"),
+              let model = try? SCNScene(url: daePath, options: nil) else {
+                return nil
+        }
+        return model.rootNode
     }
 
 
     //MARK: - GameLayoutDelegate    
     public func makeMove(player: Player, column: Int, row: Int){
-        let resource = player == .red ? "RedPuc" : "YellowPuc"
-        guard let path = Bundle.main.url(forResource: resource, withExtension: "scn") else {
-            fatalError("Could not find path for board")
+        if let model = getModel(player == .red ? .redPuck : .yellowPuck){
+            let puckNode = SCNNode()
+            puckNode.addChildNode(model)
+            puckNode.scale = SCNVector3(repeating: 0.48)
+            //Place it one row above the top of the board
+            puckNode.position = SCNVector3(x: Float(-80+(47*column)), y: 2, z: 105+(47*6))
+            puckNode.eulerAngles.x = degreesToRadians(-90)
+            board?.addChildNode(puckNode)
+            drop(puckNode, to: row)
         }
-        guard let model = try? SCNScene(url: path, options: nil) else {
-            fatalError("Board could not be initialized.")
-        }
-        
-        let puckNode = SCNNode()
-        puckNode.addChildNode(model.rootNode)
-        puckNode.scale = SCNVector3(0.48, 0.48, 0.48)
-        //Place it one row above thet top of the board
-        puckNode.position = SCNVector3(x: Float(-80+(47*column)), y: -1, z: 105+(47*6))
-        puckNode.eulerAngles.x = degreesToRadians(-90)
-        board?.addChildNode(puckNode)
-        drop(puckNode, to: row)
     }
     
     private func drop(_ node: SCNNode, to row: Int){
         //We always want them to be travelling at the same speed
         //So we use Time = Distance/Speed
-        let distance = Float(47*(6-row))
-        let speed: Float = 200.0
-        let action = SCNAction.move(by: SCNVector3Make(0, 0, -distance), duration: TimeInterval(distance/speed))
-        node.runAction(action)
+        let offset: Float = 7.0
+        let distance = Float(47*(6-row)) + offset
+        let speed: Float = 500.0
+        let time = TimeInterval(distance/speed)
+        
+        let drop = SCNAction.move(by: SCNVector3Make(0, 0, -distance), duration: time)
+        let bounce = SCNAction.move(by: SCNVector3Make(0, 0, 20), duration: 0.1)
+        let invBounce = SCNAction.move(by: SCNVector3Make(0, 0, -20 + offset), duration: 0.1)
+        let sequence = SCNAction.sequence([drop, bounce, invBounce])
+        node.runAction(sequence)
     }
     
     
@@ -116,6 +129,8 @@ public class ConnectFourViewController: UIViewController {
         sceneView.scene = scene
         cameraNode.camera = SCNCamera()
         cameraNode.position = SCNVector3Make(0.43, 0, 1)
+        //cameraNode.position = SCNVector3Make(0.6, 2, 0.1)
+        //cameraNode.eulerAngles.x = degreesToRadians(-90)
         scene.rootNode.addChildNode(cameraNode)
         self.view.addSubview(sceneView)
     }
@@ -128,11 +143,6 @@ public class ConnectFourViewController: UIViewController {
         gameLogic?.layoutDelegate = gameLayout
         let board = gameLayout!.generate()
         scene.rootNode.addChildNode(board)
-    }
-    
-    public override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
-        super.viewWillTransition(to: size, with: coordinator)
-        self.sceneView.frame.size = size
     }
     
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
