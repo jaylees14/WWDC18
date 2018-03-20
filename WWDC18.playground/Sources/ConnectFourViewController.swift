@@ -30,17 +30,13 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
         gameLayout = GameLayout()
         gameLogic  = GameLogic()
         
-        
-        //We have 3 delegates:
         //Deals with views presented to user
         gameLayout?.viewDelegate = self
         //Deals with game logic as a result of moves
         gameLayout?.logicDelegate = gameLogic
         //Deals with the game board layout
         gameLogic?.layoutDelegate = gameLayout
-        
-        let board = gameLayout!.generate()
-        scene.rootNode.addChildNode(board)
+        scene.rootNode.addChildNode(gameLayout!.getBoard())
     }
     
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {

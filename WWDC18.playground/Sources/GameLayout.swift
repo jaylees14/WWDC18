@@ -7,92 +7,35 @@ import ARKit
 //It is also notified, by the game logic, of necessary changes required to the UI
 
 public class GameLayout: GameLayoutDelegate {
-    private var columnSelectors: [SCNNode]
-    private var board: SCNNode?
+    private var board: GameBoard
     public var logicDelegate: GameLogicDelegate?
     public var viewDelegate: ViewDelegate?
     public let boardSize = (width: 7, height: 6)
     
     public init(){
-        self.columnSelectors = [SCNNode]()
+        self.board = GameBoard()
     }
     
-    public func generate() -> SCNNode {
-        board = SCNNode()
-        if let model = getModel(.connectFour){
-            board!.addChildNode(model)
-            board!.scale = SCNVector3(repeating: 0.001)
-            board!.position = SCNVector3(0,0,0)
-            board!.eulerAngles.x = degreesToRadians(-90)
-            board!.physicsBody = SCNPhysicsBody(type: .static, shape: nil)
-            addColumnSelectors()
-        }
-        return board!
+    public func getBoard() -> SCNNode {
+        return board
     }
     
     public func processTouch(_ touch: SCNHitTestResult){
-        if let node = columnSelectors.filter({$0.childNodes.contains(touch.node)}).first,
-            let column = columnSelectors.index(of: node) {
+        if let column = board.getColumn(for: touch) {
             logicDelegate?.movePlayed(column: column)
         }
     }
     
-    //Draw the column selector (▽) to the board
-    private func addColumnSelectors(){
-        for index in 0..<boardSize.width {
-            if let model = getModel(.triangle){
-                let node = SCNNode()
-                node.addChildNode(model)
-                node.scale = SCNVector3(repeating: 0.5)
-                node.position = SCNVector3(x: Float(10+(47*index)), y: 0, z: 385)
-                node.eulerAngles.x = degreesToRadians(-90)
-                columnSelectors.append(model)
-                board?.addChildNode(node)
-            }
-        }
-    }
-    
-    private func getModel(_ model: SceneModel) -> SCNNode? {
-        guard let daePath = Bundle.main.url(forResource: model.rawValue, withExtension: "scn"),
-            let model = try? SCNScene(url: daePath, options: nil) else {
-                return nil
-        }
-        return model.rootNode
-    }
-    
-    
     //MARK: - GameLayoutDelegate
     public func makeMove(player: Player, column: Int, row: Int){
-        if let model = getModel(player == .red ? .redPuck : .yellowPuck){
-            let puckNode = SCNNode()
-            puckNode.addChildNode(model)
-            puckNode.scale = SCNVector3(repeating: 0.48)
-            //Place it one row above the top of the board
-            puckNode.position = SCNVector3(x: Float(-80+(47*column)), y: 2, z: 105+(47*6))
-            puckNode.eulerAngles.x = degreesToRadians(-90)
-            board?.addChildNode(puckNode)
-            drop(puckNode, to: row)
-        }
+        print("Making move")
+        let puck = PlayerPuck(player: player, column: column)
+        board.addChildNode(puck)
+        puck.drop(to: row)
     }
-    
-    private func drop(_ node: SCNNode, to row: Int){
-        //We always want them to be travelling at the same speed
-        //So we use Time = Distance/Speed
-        let offset: Float = 7.0
-        let distance = Float(47*(6-row)) + offset
-        let speed: Float = 500.0
-        let time = TimeInterval(distance/speed)
-        
-        let drop = SCNAction.move(by: SCNVector3Make(0, 0, -distance), duration: time)
-        let bounce = SCNAction.move(by: SCNVector3Make(0, 0, 20), duration: 0.1)
-        let invBounce = SCNAction.move(by: SCNVector3Make(0, 0, -20 + offset), duration: 0.1)
-        let sequence = SCNAction.sequence([drop, bounce, invBounce])
-        node.runAction(sequence)
-    }
-    
     
     public func allMovesMade(for column: Int){
-        columnSelectors[column].removeFromParentNode()
+        board.remove(column)
     }
     
     public func gameWon(by player: Player){
