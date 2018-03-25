@@ -35,4 +35,9 @@ public class GameBoard: GameNode {
     public func remove(_ column: Int){
         columnSelectors[column].removeFromParentNode()
     }
+    
+    public func removeAllColumns(){
+        columnSelectors.forEach { $0.removeFromParentNode() }
+    }
+
 }

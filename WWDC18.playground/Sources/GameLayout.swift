@@ -28,7 +28,6 @@ public class GameLayout: GameLayoutDelegate {
     
     //MARK: - GameLayoutDelegate
     public func makeMove(player: Player, column: Int, row: Int){
-        print("Making move")
         let puck = PlayerPuck(player: player, column: column)
         board.addChildNode(puck)
         puck.drop(to: row)
@@ -39,10 +38,14 @@ public class GameLayout: GameLayoutDelegate {
     }
     
     public func gameWon(by player: Player){
-        viewDelegate?.showAlert(title: "Congratulations!", message: "\(player.rawValue) won! \(player.otherPlayer().rawValue), think you can do better? Click reset below to play again!")
+        board.removeAllColumns()
+        viewDelegate?.showAlert(title: "Congratulations!",
+                                message: "\(player.rawValue) won! \(player.otherPlayer().rawValue), think you can do better? Click reset below to play again!")
     }
     
     public func gameDrawn(){
-        viewDelegate?.showAlert(title: "Oh no!", message: "Looks like it was a draw. You can definitely do better than that, hit reset below to have another go!")
+        board.removeAllColumns()
+        viewDelegate?.showAlert(title: "Oh no!",
+                                message: "Looks like it was a draw. You can definitely do better than that, hit reset below to have another go!")
     }
 }

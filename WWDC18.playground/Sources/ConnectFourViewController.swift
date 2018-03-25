@@ -8,6 +8,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
     private var cameraNode: SCNNode!
     private var gameLayout: GameLayout?
     private var gameLogic: GameLogic?
+    private var blurEffectView: UIVisualEffectView?
     
     public override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,6 +28,28 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
     
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        resetGame()
+        
+        let button = UIButton()
+        button.layer.borderWidth = 2
+        button.layer.borderColor = UIColor.black.cgColor
+        button.setTitle("Reset", for: .normal)
+        button.setTitleColor(.black, for: .normal)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        button.addTarget(self, action: #selector(resetGame), for: .touchUpInside)
+        view.addSubview(button)
+        
+        let bottom = NSLayoutConstraint(item: button, attribute: .bottom, relatedBy: .equal, toItem: view, attribute: .bottom, multiplier: 1, constant: -25)
+        let leading = NSLayoutConstraint(item: button, attribute: .leading, relatedBy: .equal, toItem: view, attribute: .leading, multiplier: 1, constant: 20)
+        let width = NSLayoutConstraint(item: button, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 50)
+        let height = NSLayoutConstraint(item: button, attribute: .height, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 50)
+        NSLayoutConstraint.activate([bottom, leading, width, height])
+        button.translatesAutoresizingMaskIntoConstraints = false
+    }
+
+
+    @objc func resetGame(){
+        addBlurView()
         gameLayout = GameLayout()
         gameLogic  = GameLogic()
         
@@ -36,7 +59,15 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
         gameLayout?.logicDelegate = gameLogic
         //Deals with the game board layout
         gameLogic?.layoutDelegate = gameLayout
+        
+        scene.rootNode.childNodes.forEach { $0.removeFromParentNode() }
         scene.rootNode.addChildNode(gameLayout!.getBoard())
+        
+        
+        //Give 2 seconds to allow for the view to be reset
+        Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { (_) in
+            self.blurEffectView?.removeFromSuperview()
+        }
     }
     
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -50,10 +81,30 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
         }
     }
     
+    func addBlurView(){
+        blurEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .light))
+        blurEffectView!.frame = view.bounds
+        blurEffectView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(blurEffectView!)
+    }
     
     //MARK: - ViewDelegate
     public func showAlert(title: String, message: String){
-        print(title)
-        print(message)
+        addBlurView()
+        
+        let alertView = AlertView(onDismiss: {
+            self.blurEffectView?.removeFromSuperview()
+        })
+        view.addSubview(alertView)
+        
+        let height = NSLayoutConstraint(item: alertView, attribute: .height, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 300)
+        let leading = NSLayoutConstraint(item: alertView, attribute: .leadingMargin, relatedBy: .equal, toItem: view, attribute: .leadingMargin, multiplier: 1, constant: 50)
+        let trailing = NSLayoutConstraint(item: alertView, attribute: .trailingMargin, relatedBy: .equal, toItem: view, attribute: .trailingMargin, multiplier: 1, constant: -50)
+        let center = NSLayoutConstraint(item: alertView, attribute: .centerY, relatedBy: .equal, toItem: view, attribute: .centerY, multiplier: 1, constant: 0)
+        
+        NSLayoutConstraint.activate([height, leading, trailing, center])
+        alertView.translatesAutoresizingMaskIntoConstraints = false
+
+        alertView.populate(title: title, message: message)
     }
 }
