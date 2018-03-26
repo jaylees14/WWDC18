@@ -1,35 +1,40 @@
 import Foundation
 import UIKit
-import SceneKit
+import ARKit
 
-public class ConnectFourViewController: UIViewController, ViewDelegate {
-    private var sceneView: SCNView!
+public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNViewDelegate {
+    private var sceneView: ARSCNView!
     private var scene: SCNScene!
-    private var cameraNode: SCNNode!
     private var gameLayout: GameLayout?
     private var gameLogic: GameLogic?
     private var blurEffectView: UIVisualEffectView?
     
-    public override func viewDidLoad() {
-        super.viewDidLoad()
-        //Initialise the scene
-        sceneView = SCNView(frame: view.frame)
-        scene = SCNScene()
-        cameraNode = SCNNode()
-        
-        sceneView.scene = scene
-        cameraNode.camera = SCNCamera()
-        cameraNode.position = SCNVector3Make(0.43, 0, 1)
-        //cameraNode.position = SCNVector3Make(0.6, 2, 0.1)
-        //cameraNode.eulerAngles.x = degreesToRadians(-90)
-        scene.rootNode.addChildNode(cameraNode)
-        self.view.addSubview(sceneView)
-    }
-    
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        resetGame()
+        guard ARWorldTrackingConfiguration.isSupported else {
+            showAlert(title: "Whoops!", message: "Looks like AR isn't supported on this platform 😢. Please try again on Playgrounds for iPad.")
+            return
+        }
         
+        //Initialise the scene
+        sceneView = ARSCNView(frame: view.frame)
+        scene = SCNScene()
+        sceneView.scene = scene
+        sceneView.showsStatistics = true
+        sceneView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        sceneView.delegate = self
+        
+        //Add AR Tracking
+        let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = .horizontal
+        sceneView.session.run(configuration)
+        self.view.addSubview(sceneView)
+        
+        resetGame()
+        addResetButton()
+    }
+
+    func addResetButton(){
         let button = UIButton()
         button.layer.borderWidth = 2
         button.layer.borderColor = UIColor.black.cgColor
@@ -47,10 +52,14 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
         button.translatesAutoresizingMaskIntoConstraints = false
     }
 
-
     @objc func resetGame(){
         addBlurView()
-        gameLayout = GameLayout()
+        if let layout = gameLayout {
+            layout.reset()
+        } else {
+            gameLayout = GameLayout()
+            
+        }
         gameLogic  = GameLogic()
         
         //Deals with views presented to user
@@ -59,10 +68,6 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
         gameLayout?.logicDelegate = gameLogic
         //Deals with the game board layout
         gameLogic?.layoutDelegate = gameLayout
-        
-        scene.rootNode.childNodes.forEach { $0.removeFromParentNode() }
-        scene.rootNode.addChildNode(gameLayout!.getBoard())
-        
         
         //Give 2 seconds to allow for the view to be reset
         Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { (_) in
@@ -87,6 +92,28 @@ public class ConnectFourViewController: UIViewController, ViewDelegate {
         blurEffectView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(blurEffectView!)
     }
+    
+    //MARK: - ARSCNViewDelegate
+    public func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        // We only want to detect the first plane that we come across
+        guard let planeAnchor = anchor as? ARPlaneAnchor, gameLayout?.planeAnchor == nil else {
+            return
+        }
+        
+        gameLayout?.planeAnchor = planeAnchor
+        if let board = gameLayout?.getBoard() {
+            node.addChildNode(board)
+        }
+    }
+    
+    public func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor){
+        guard let planeAnchor = anchor as? ARPlaneAnchor, planeAnchor.identifier == gameLayout?.planeAnchor?.identifier else {
+            return
+        }
+        
+        
+    }
+    
     
     //MARK: - ViewDelegate
     public func showAlert(title: String, message: String){

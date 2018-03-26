@@ -1,19 +1,30 @@
-import SceneKit
+import ARKit
 
 public class GameBoard: GameNode {
     private var columnSelectors: [ColumnSelector]
+    private var pucks: [PlayerPuck]
     
-    public init(){
+    public init(anchor: ARPlaneAnchor){
         columnSelectors = [ColumnSelector]()
+        pucks = [PlayerPuck]()
         super.init(from: Model.connectFour)
         self.scale = SCNVector3(repeating: 0.001)
-        self.position = SCNVector3(0,0,0)
+        self.position = SCNVector3(anchor.center.x, 0, anchor.center.z)
         self.eulerAngles.x = degreesToRadians(-90)
         addColumnSelectors()
     }
     
     required public init?(coder aDecoder: NSCoder) {
         fatalError("Not implemented")
+    }
+    
+    public func updatePosition(to anchor: ARPlaneAnchor){
+        self.position = SCNVector3(anchor.center.x, 0, anchor.center.z)
+    }
+    
+    public func addPuck(_ puck: PlayerPuck){
+        self.addChildNode(puck)
+        pucks.append(puck)
     }
     
     private func addColumnSelectors(){
@@ -38,6 +49,14 @@ public class GameBoard: GameNode {
     
     public func removeAllColumns(){
         columnSelectors.forEach { $0.removeFromParentNode() }
+        columnSelectors = []
+    }
+    
+    public func reset(){
+        removeAllColumns()
+        pucks.forEach { $0.removeFromParentNode() }
+        pucks = []
+        addColumnSelectors()
     }
 
 }
