@@ -8,9 +8,10 @@ public class GameBoard: GameNode {
         columnSelectors = [ColumnSelector]()
         pucks = [PlayerPuck]()
         super.init(from: Model.connectFour)
-        self.scale = SCNVector3(repeating: 0.001)
-        self.position = SCNVector3(anchor.center.x, 0, anchor.center.z)
+        self.scale = SCNVector3(repeating: 0.0015)
+        self.position = SCNVector3(anchor.center.x + 100, 0, anchor.center.z-100)
         self.eulerAngles.x = degreesToRadians(-90)
+        //self.eulerAngles.y = degreesToRadians(90)
         addColumnSelectors()
     }
     

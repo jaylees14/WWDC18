@@ -8,6 +8,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
     private var gameLayout: GameLayout?
     private var gameLogic: GameLogic?
     private var blurEffectView: UIVisualEffectView?
+    private var isShowingInitialWelcome: Bool = false
     
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -15,7 +16,6 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
             showAlert(title: "Whoops!", message: "Looks like AR isn't supported on this platform 😢. Please try again on Playgrounds for iPad.")
             return
         }
-        
         //Initialise the scene
         sceneView = ARSCNView(frame: view.frame)
         scene = SCNScene()
@@ -23,13 +23,14 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         sceneView.showsStatistics = true
         sceneView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         sceneView.delegate = self
-        
+
         //Add AR Tracking
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = .horizontal
         sceneView.session.run(configuration)
         self.view.addSubview(sceneView)
-        
+
+        showWelcomeMessage()
         resetGame()
         addResetButton()
     }
@@ -37,9 +38,9 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
     func addResetButton(){
         let button = UIButton()
         button.layer.borderWidth = 2
-        button.layer.borderColor = UIColor.black.cgColor
+        button.layer.borderColor = UIColor.white.cgColor
         button.setTitle("Reset", for: .normal)
-        button.setTitleColor(.black, for: .normal)
+        button.setTitleColor(.white, for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .bold)
         button.addTarget(self, action: #selector(resetGame), for: .touchUpInside)
         view.addSubview(button)
@@ -52,13 +53,59 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         button.translatesAutoresizingMaskIntoConstraints = false
     }
 
+    func showWelcomeMessage(){
+        isShowingInitialWelcome = true
+        addBlurView()
+        let welcomeLabel = UILabel()
+        let explainLabel = UILabel()
+        welcomeLabel.text = "Welcome to Connect4!"
+        explainLabel.text =
+        """
+        The aim of the game is simple: make a vertical, horizontal or diagonal line of discs by dropping them from the top of the board (just tap the 🔻 on the top of each row).
+        
+        The game is best played with someone else,  although you can switch between a real and computer player by pressing the button below.
+        
+        It uses augmented reality to enhance the game experience, so move the iPad around slowly so we can detect a suitable surface to play the game on!
+        
+        Tap anywhere to dismiss.
+        """
+        
+        explainLabel.numberOfLines = 20
+        explainLabel.adjustsFontSizeToFitWidth = true
+        view.addSubview(explainLabel)
+        view.addSubview(welcomeLabel)
+        
+        [(welcomeLabel, 30), (explainLabel, 19),].forEach { label,size in
+            label.backgroundColor = .white
+            label.textColor = .black
+            label.layer.cornerRadius = 15
+            label.layer.shadowOpacity = 0.7
+            label.layer.shadowRadius = 5
+            label.clipsToBounds = true
+            label.layer.shadowColor = UIColor.white.cgColor
+            label.textAlignment = .center
+            label.font = UIFont(name: "Avenir", size: CGFloat(size))
+            let leading = NSLayoutConstraint(item: label, attribute: .leadingMargin, relatedBy: .equal, toItem: view, attribute: .leadingMargin, multiplier: 1, constant: 20)
+            let trailing = NSLayoutConstraint(item: label, attribute: .trailingMargin, relatedBy: .equal, toItem: view, attribute: .trailingMargin, multiplier: 1, constant: -20)
+            NSLayoutConstraint.activate([leading, trailing])
+        }
+        
+        let welcomeTop = NSLayoutConstraint(item: welcomeLabel, attribute: .top, relatedBy: .equal, toItem: view, attribute: .top, multiplier: 1, constant: 25)
+        let welcomeHeight = NSLayoutConstraint(item: welcomeLabel, attribute: .height, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 100)
+        let explainToWelcome = NSLayoutConstraint(item: explainLabel, attribute: .top, relatedBy: .equal, toItem: welcomeLabel, attribute: .bottom, multiplier: 1, constant: 25)
+        let explainToBottom = NSLayoutConstraint(item: explainLabel, attribute: .bottom, relatedBy: .equal, toItem: view, attribute: .bottom, multiplier: 1, constant: -25)
+        NSLayoutConstraint.activate([welcomeTop, welcomeHeight, explainToWelcome, explainToBottom])
+        explainLabel.translatesAutoresizingMaskIntoConstraints = false
+        welcomeLabel.translatesAutoresizingMaskIntoConstraints = false
+    }
+
+    
     @objc func resetGame(){
         addBlurView()
         if let layout = gameLayout {
             layout.reset()
         } else {
             gameLayout = GameLayout()
-            
         }
         gameLogic  = GameLogic()
         
@@ -77,7 +124,12 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
     
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        if(touch.view == self.sceneView){
+        if isShowingInitialWelcome {
+            view.subviews.filter { $0 is UILabel || $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
+            isShowingInitialWelcome = false
+        }
+        
+        if touch.view == self.sceneView {
             let location = touch.location(in: sceneView)
             guard let result = sceneView.hitTest(location, options: nil).first else {
                 return
@@ -106,14 +158,15 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         }
     }
     
-    public func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor){
-        guard let planeAnchor = anchor as? ARPlaneAnchor, planeAnchor.identifier == gameLayout?.planeAnchor?.identifier else {
+    public func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        guard let planeAnchor = anchor as? ARPlaneAnchor  else {
             return
         }
         
-        
+        if planeAnchor.identifier == gameLayout?.planeAnchor?.identifier {
+            gameLayout?.planeAnchor = planeAnchor
+        }
     }
-    
     
     //MARK: - ViewDelegate
     public func showAlert(title: String, message: String){
@@ -132,6 +185,6 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         NSLayoutConstraint.activate([height, leading, trailing, center])
         alertView.translatesAutoresizingMaskIntoConstraints = false
 
-        alertView.populate(title: title, message: message)
+        alertView.populateError(title: title, message: message)
     }
 }
