@@ -42,7 +42,7 @@ public class AlertView: UIView {
         self.addSubview(button)
         addConstraints(to: titleLabel, top: 20, height: 50)
         addConstraints(to: messageLabel, top: 90, height: 150)
-        addConstraints(to: button, top: 260, height: 30, leading: 100, trailing: -100)
+        addConstraints(to: button, top: 230, height: 30, leading: 100, trailing: -100)
     }
     
     @objc private func dismissView(){
