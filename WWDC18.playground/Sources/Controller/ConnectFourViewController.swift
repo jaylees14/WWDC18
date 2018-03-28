@@ -63,7 +63,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         """
         The aim of the game is simple: make a vertical, horizontal or diagonal line of discs by dropping them from the top of the board (just tap the 🔻 on the top of each row).
         
-        The game is best played with someone else,  although you can switch between a real and computer player by pressing the button below.
+        The game requires two players, with the red player starting first!
         
         It uses augmented reality to enhance the game experience, so move the iPad around slowly so we can detect a suitable surface to play the game on!
         
@@ -88,6 +88,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
             let leading = NSLayoutConstraint(item: label, attribute: .leadingMargin, relatedBy: .equal, toItem: view, attribute: .leadingMargin, multiplier: 1, constant: 20)
             let trailing = NSLayoutConstraint(item: label, attribute: .trailingMargin, relatedBy: .equal, toItem: view, attribute: .trailingMargin, multiplier: 1, constant: -20)
             NSLayoutConstraint.activate([leading, trailing])
+            label.translatesAutoresizingMaskIntoConstraints = false
         }
         
         let welcomeTop = NSLayoutConstraint(item: welcomeLabel, attribute: .top, relatedBy: .equal, toItem: view, attribute: .top, multiplier: 1, constant: 25)
@@ -95,8 +96,6 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         let explainToWelcome = NSLayoutConstraint(item: explainLabel, attribute: .top, relatedBy: .equal, toItem: welcomeLabel, attribute: .bottom, multiplier: 1, constant: 25)
         let explainToBottom = NSLayoutConstraint(item: explainLabel, attribute: .bottom, relatedBy: .equal, toItem: view, attribute: .bottom, multiplier: 1, constant: -25)
         NSLayoutConstraint.activate([welcomeTop, welcomeHeight, explainToWelcome, explainToBottom])
-        explainLabel.translatesAutoresizingMaskIntoConstraints = false
-        welcomeLabel.translatesAutoresizingMaskIntoConstraints = false
     }
 
     
@@ -162,7 +161,6 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         guard let planeAnchor = anchor as? ARPlaneAnchor  else {
             return
         }
-        
         if planeAnchor.identifier == gameLayout?.planeAnchor?.identifier {
             gameLayout?.planeAnchor = planeAnchor
         }

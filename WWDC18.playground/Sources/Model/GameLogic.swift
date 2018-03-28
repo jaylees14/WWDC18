@@ -10,13 +10,14 @@ import Foundation
 /// (0,0) | (1,0) | (2,0) | (3,0) | (4,0) | (5,0) | (6,0)
 
 public class GameLogic: GameLogicDelegate {
+    typealias Move = Int
     public let boardSize = (rows: 6, cols: 7)
     private var store: Store<GameState, Move>
-    private let moveReducer = Reducer<GameState, Move> { state, action in
-        let row = state.board[action.column].filter { $0 == nil }.count - 1
+    private let moveReducer = Reducer<GameState, Move> { state, column in
+        let row = state.board[column].filter { $0 == nil }.count - 1
         var board = state.board
-        board[action.column][row] = state.currentPlayer
-        return GameState(board: board, currentPlayer: state.currentPlayer.other(), previousMove: (row: row, column: action.column))
+        board[column][row] = state.currentPlayer
+        return GameState(board: board, currentPlayer: state.currentPlayer.other(), previousMove: (row: row, column: column))
     }
     public var layoutDelegate: GameLayoutDelegate?
     
@@ -30,7 +31,7 @@ public class GameLogic: GameLogicDelegate {
     
     //MARK: - GameLogicDelegate
     public func movePlayed(column: Int) {
-        store.dispatch(Move(column: column))
+        store.dispatch(column)
     }
     
     
