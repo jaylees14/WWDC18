@@ -51,13 +51,12 @@ public class GameLayout: GameLayoutDelegate {
         board?.removeAllColumns()
         Timer.scheduledTimer(withTimeInterval: 1, repeats: false, block: { (_) in
             self.viewDelegate?.showAlert(title: "Congratulations!",
-                                    message: "\(player.rawValue) won! \(player.otherPlayer().rawValue), think you can do better? Click reset below to play again!")
+                                    message: "\(player.rawValue) won! \(player.other().rawValue), think you can do better? Click reset below to play again!")
         })
         
     }
     
     public func gameDrawn(){
-        board?.removeAllColumns()
         Timer.scheduledTimer(withTimeInterval: 1, repeats: false, block: { (_) in
             self.viewDelegate?.showAlert(title: "Oh no!",
                                message: "Looks like it was a draw! Want to try again? Hit the reset button below!")

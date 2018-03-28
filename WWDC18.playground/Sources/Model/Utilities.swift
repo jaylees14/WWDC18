@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 
-
 public func degreesToRadians(_ degrees: Float) -> Float {
     return degrees * Float.pi/180
 }

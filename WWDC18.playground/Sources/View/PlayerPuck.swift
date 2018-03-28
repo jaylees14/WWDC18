@@ -16,7 +16,7 @@ public class PlayerPuck: GameNode {
         //We always want them to be travelling at the same speed
         //So we use Time = Distance/Speed
         let offset: Float = 7.0
-        let distance = Float(47*(6-row)) + offset
+        let distance = Float(47*(row+1)) + offset
         let speed: Float = 500.0
         let time = TimeInterval(distance/speed)
         

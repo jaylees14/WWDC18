@@ -1,4 +1,11 @@
 import UIKit
+import SceneKit
+
+public extension SCNVector3 {
+    init(repeating value: Float){
+        self.init(value, value, value)
+    }
+}
 
 extension UIColor {
     /// Initalise a UIColor from a hex string formatted as RRGGBB or RRGGBBAA, with or without a leading #
