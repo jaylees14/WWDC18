@@ -41,6 +41,7 @@ public class GameLayout: GameLayoutDelegate {
         let puck = PlayerPuck(player: player, column: column)
         board?.addPuck(puck)
         puck.drop(to: row)
+        viewDelegate?.change(to: player.other())
     }
     
     public func allMovesMade(for column: Int){

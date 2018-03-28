@@ -8,6 +8,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
     private var gameLayout: GameLayout?
     private var gameLogic: GameLogic?
     private var blurEffectView: UIVisualEffectView?
+    private var currentPlayerLabel: UILabel!
     private var isShowingInitialWelcome: Bool = false
     
     public override func viewDidAppear(_ animated: Bool) {
@@ -30,9 +31,25 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         sceneView.session.run(configuration)
         self.view.addSubview(sceneView)
 
+        
         showWelcomeMessage()
         resetGame()
         addResetButton()
+    }
+    
+    func addPlayerLabel(){
+        currentPlayerLabel = UILabel()
+        currentPlayerLabel.text = "Red Player's turn"
+        currentPlayerLabel.textColor = .white
+        currentPlayerLabel.textAlignment = .center
+        currentPlayerLabel.font = UIFont(name: "Avenir", size: 20)
+        view.addSubview(currentPlayerLabel)
+        let bottom = NSLayoutConstraint(item: currentPlayerLabel, attribute: .bottom, relatedBy: .equal, toItem: view, attribute: .bottom, multiplier: 1, constant: -25)
+        let width = NSLayoutConstraint(item: currentPlayerLabel, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 200)
+        let height = NSLayoutConstraint(item: currentPlayerLabel, attribute: .height, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 100)
+        let center = NSLayoutConstraint(item: currentPlayerLabel, attribute: .centerX, relatedBy: .equal, toItem: view, attribute: .centerX, multiplier: 1, constant: 0)
+        NSLayoutConstraint.activate([bottom, center, width, height])
+        currentPlayerLabel.translatesAutoresizingMaskIntoConstraints = false
     }
 
     func addResetButton(){
@@ -126,6 +143,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         if isShowingInitialWelcome {
             view.subviews.filter { $0 is UILabel || $0 is UIVisualEffectView }.forEach { $0.removeFromSuperview() }
             isShowingInitialWelcome = false
+            addPlayerLabel()
         }
         
         if touch.view == self.sceneView {
@@ -184,5 +202,9 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         alertView.translatesAutoresizingMaskIntoConstraints = false
 
         alertView.populateError(title: title, message: message)
+    }
+    
+    public func change(to player: Player){
+        currentPlayerLabel.text = "\(player.rawValue)'s turn"
     }
 }
