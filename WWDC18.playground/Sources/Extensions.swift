@@ -1,9 +1,17 @@
 import UIKit
 import SceneKit
 
+/**
+ Extensions
+ - Utilities used to extend existing classes
+ **/
+
 public extension SCNVector3 {
-    init(repeating value: Float){
-        self.init(value, value, value)
+    /// Initialise a SCNVector3 with the same value for x, y and z
+    ///
+    /// - Parameter v: value to be repeated
+    init(repeating v: Float){
+        self.init(v, v, v)
     }
 }
 

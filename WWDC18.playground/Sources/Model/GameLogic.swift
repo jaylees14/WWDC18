@@ -1,13 +1,20 @@
 import Foundation
 
-///Each position on the board is represented as a 2D-coordinate, with the origin in the bottom left
-///
-/// (0,5) | (1,5) | (2,5) | (3,5) | (4,5) | (5,5) | (6,5)
-/// (0,4) | (1,4) | (2,4) | (3,4) | (4,4) | (5,4) | (6,4)
-/// (0,3) | (1,3) | (2,3) | (3,3) | (4,3) | (5,3) | (6,3)
-/// (0,2) | (1,2) | (2,2) | (3,2) | (4,2) | (5,2) | (6,2)
-/// (0,1) | (1,1) | (2,1) | (3,1) | (4,1) | (5,1) | (6,1)
-/// (0,0) | (1,0) | (2,0) | (3,0) | (4,0) | (5,0) | (6,0)
+/**
+ GameLogic
+    - Controls the "logic" behind the game
+    - Stores moves made
+    - Determines if a game has been won/drawn
+    - Notifies the game layout if all moves have been made for a given column
+ **/
+
+//Each position on the board is represented as a 2D-coordinate, with the origin in the bottom left
+//(0,5) | (1,5) | (2,5) | (3,5) | (4,5) | (5,5) | (6,5)
+//(0,4) | (1,4) | (2,4) | (3,4) | (4,4) | (5,4) | (6,4)
+//(0,3) | (1,3) | (2,3) | (3,3) | (4,3) | (5,3) | (6,3)
+//(0,2) | (1,2) | (2,2) | (3,2) | (4,2) | (5,2) | (6,2)
+//(0,1) | (1,1) | (2,1) | (3,1) | (4,1) | (5,1) | (6,1)
+//(0,0) | (1,0) | (2,0) | (3,0) | (4,0) | (5,0) | (6,0)
 
 public class GameLogic: GameLogicDelegate {
     typealias Move = Int
@@ -21,6 +28,7 @@ public class GameLogic: GameLogicDelegate {
     }
     public var layoutDelegate: GameLayoutDelegate?
     
+    //MARK: - Initializer
     public init(){
         let emptyBoard: GameState.Board = Array(repeating: Array(repeating: nil, count: 6), count: 7)
         let initialState = GameState(board: emptyBoard, currentPlayer: .red)
@@ -35,7 +43,7 @@ public class GameLogic: GameLogicDelegate {
     }
     
     
-    //MARK: - Subscribers
+    //MARK: - State Subscribers
     private func columnLimit(_ gameState: GameState) {
         guard let move = gameState.previousMove else { return }
         print(gameState.board)
@@ -60,6 +68,7 @@ public class GameLogic: GameLogicDelegate {
         }
     }
     
+    //MARK: - Game Outcome
     private func hasWon(board: [[Player?]], player: Player) -> Bool {
         //Horizontal Line
         for r in 0..<6 {

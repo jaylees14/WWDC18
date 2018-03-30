@@ -1,5 +1,11 @@
 import ARKit
 
+/**
+GameBoard
+ - Custom game node that represents the physical game board
+ - Handles drawing of column selectors
+ - Handles drawing of pucks when move is made
+ **/
 public class GameBoard: GameNode {
     private var columnSelectors: [ColumnSelector]
     private var pucks: [PlayerPuck]
@@ -11,6 +17,7 @@ public class GameBoard: GameNode {
         self.scale = SCNVector3(repeating: 0.0015)
         self.position = SCNVector3(anchor.center.x, 0, anchor.center.z)
         self.eulerAngles.x = degreesToRadians(-90)
+        self.eulerAngles.y = degreesToRadians(90)
         addColumnSelectors()
     }
     
@@ -46,14 +53,13 @@ public class GameBoard: GameNode {
     }
     
     public func removeAllColumns(){
-        columnSelectors = []
+        columnSelectors.forEach { $0.isHidden = true }
     }
     
     public func reset(){
-        removeAllColumns()
+        columnSelectors.forEach { $0.isHidden = false }
         pucks.forEach { $0.removeFromParentNode() }
         pucks = []
-        addColumnSelectors()
     }
 
 }

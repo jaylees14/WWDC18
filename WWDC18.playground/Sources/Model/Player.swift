@@ -1,5 +1,9 @@
 import Foundation
 
+/**
+ Player
+ - The two game players
+ **/
 public enum Player: String {
     case red = "Red Player"
     case yellow = "Yellow Player"

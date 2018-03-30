@@ -1,5 +1,13 @@
 import Foundation
 
+/**
+ Store
+  - Stores the current game state
+  - Given a move, will reduce the current state to the new state
+ 
+ **/
+
+
 public struct Reducer<S, A> {
     let reduce: (S, A) -> S
 }

@@ -1,10 +1,14 @@
 import Foundation
 import ARKit
 
-//GameBoardLayout deals with the user interaction of the game board.
-//This involves drawing the board and associated items, animating the moves
-//and notifying the GameLogic of moves made
-//It is also notified, by the game logic, of necessary changes required to the UI
+
+/**
+ GameLayout
+    - Deals with user input and making corresponding moves
+    - Creates all of the 3D models required
+    - Notifies GameLogic of moves made
+    - Is notified by GameLogic of any changes to the UI (logicDelegate)
+ **/
 
 public class GameLayout: GameLayoutDelegate {
     private var board: GameBoard?
@@ -26,6 +30,7 @@ public class GameLayout: GameLayoutDelegate {
         return board
     }
     
+    //Will determine if the user touched a selector and notify logic as necessary
     public func processTouch(_ touch: SCNHitTestResult){
         if let column = board?.getColumn(for: touch) {
             logicDelegate?.movePlayed(column: column)
@@ -44,10 +49,12 @@ public class GameLayout: GameLayoutDelegate {
         viewDelegate?.change(to: player.other())
     }
     
+    //If all moves have been made for a column, remove the ability to select it
     public func allMovesMade(for column: Int){
         board?.remove(column)
     }
     
+    //Notify view that game is won and remove ability to make further moves
     public func gameWon(by player: Player){
         board?.removeAllColumns()
         Timer.scheduledTimer(withTimeInterval: 1, repeats: false, block: { (_) in
@@ -57,6 +64,7 @@ public class GameLayout: GameLayoutDelegate {
         
     }
     
+    //Notify view that game is drawn
     public func gameDrawn(){
         Timer.scheduledTimer(withTimeInterval: 1, repeats: false, block: { (_) in
             self.viewDelegate?.showAlert(title: "Oh no!",

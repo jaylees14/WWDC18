@@ -1,5 +1,10 @@
 import Foundation
 
+/**
+ GameState
+    - Stores the current game state at any given time
+ **/
+
 public struct GameState {
     typealias Board = [[Player?]] 
     var board: Board

@@ -2,6 +2,13 @@ import Foundation
 import UIKit
 import ARKit
 
+/**
+ ConnectFourViewController
+  - Holds the single view for this playground.
+  - Manages the AR/Camera view and presents it to the user.
+  - Handles user input, passing it along to the appropriate object to handle
+**/
+
 public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNViewDelegate {
     private var sceneView: ARSCNView!
     private var scene: SCNScene!
@@ -11,6 +18,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
     private var currentPlayerLabel: UILabel!
     private var isShowingInitialWelcome: Bool = false
     
+    //MARK: - View Setup
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         guard ARWorldTrackingConfiguration.isSupported else {
@@ -30,14 +38,15 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         configuration.planeDetection = .horizontal
         sceneView.session.run(configuration)
         self.view.addSubview(sceneView)
-
         
+        //Add additional UI elements
         showWelcomeMessage()
         resetGame()
         addResetButton()
     }
     
-    func addPlayerLabel(){
+    //Generate a label that displays the current player
+    private func addPlayerLabel(){
         currentPlayerLabel = UILabel()
         currentPlayerLabel.text = "Red Player's turn"
         currentPlayerLabel.textColor = .white
@@ -52,6 +61,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         currentPlayerLabel.translatesAutoresizingMaskIntoConstraints = false
     }
 
+    //Generate a button that allows the game to be reset
     func addResetButton(){
         let button = UIButton()
         button.layer.borderWidth = 2
@@ -70,6 +80,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         button.translatesAutoresizingMaskIntoConstraints = false
     }
 
+    //Show an inital welcome message to the user, explaining how the game works
     func showWelcomeMessage(){
         isShowingInitialWelcome = true
         addBlurView()
@@ -114,14 +125,27 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         let explainToBottom = NSLayoutConstraint(item: explainLabel, attribute: .bottom, relatedBy: .equal, toItem: view, attribute: .bottom, multiplier: 1, constant: -25)
         NSLayoutConstraint.activate([welcomeTop, welcomeHeight, explainToWelcome, explainToBottom])
     }
-
     
+    //Add a blur view that fills the screen
+    func addBlurView(){
+        blurEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .light))
+        blurEffectView!.frame = view.bounds
+        blurEffectView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(blurEffectView!)
+    }
+
+    //MARK: - Action Methods
+    //Called on tap of "Reset" button - resets the game state so a new game can begin
     @objc func resetGame(){
         addBlurView()
         if let layout = gameLayout {
             layout.reset()
         } else {
             gameLayout = GameLayout()
+        }
+        
+        if let playerLabel = currentPlayerLabel {
+            playerLabel.text = "Red Player's Turn"
         }
         gameLogic  = GameLogic()
         
@@ -138,6 +162,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         }
     }
     
+    //Handle the user interaction
     public override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         if isShowingInitialWelcome {
@@ -146,6 +171,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
             addPlayerLabel()
         }
         
+        //Pass any interaction with the game to the layout engine to handle
         if touch.view == self.sceneView {
             let location = touch.location(in: sceneView)
             guard let result = sceneView.hitTest(location, options: nil).first else {
@@ -155,12 +181,6 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         }
     }
     
-    func addBlurView(){
-        blurEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .light))
-        blurEffectView!.frame = view.bounds
-        blurEffectView!.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        view.addSubview(blurEffectView!)
-    }
     
     //MARK: - ARSCNViewDelegate
     public func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
@@ -168,7 +188,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         guard let planeAnchor = anchor as? ARPlaneAnchor, gameLayout?.planeAnchor == nil else {
             return
         }
-        
+        //Give the layout the position of the plane and add the correpsonding board to the view
         gameLayout?.planeAnchor = planeAnchor
         if let board = gameLayout?.getBoard() {
             node.addChildNode(board)
@@ -179,12 +199,14 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         guard let planeAnchor = anchor as? ARPlaneAnchor  else {
             return
         }
+        //If the plane is the one where the game board is, update it's position
         if planeAnchor.identifier == gameLayout?.planeAnchor?.identifier {
             gameLayout?.planeAnchor = planeAnchor
         }
     }
     
     //MARK: - ViewDelegate
+    //Show an alert to the screen
     public func showAlert(title: String, message: String){
         addBlurView()
         
@@ -204,6 +226,7 @@ public class ConnectFourViewController: UIViewController, ViewDelegate, ARSCNVie
         alertView.populateError(title: title, message: message)
     }
     
+    //Update the UI to reflect the next player
     public func change(to player: Player){
         currentPlayerLabel.text = "\(player.rawValue)'s turn"
     }

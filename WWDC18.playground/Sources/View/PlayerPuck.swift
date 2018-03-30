@@ -1,5 +1,12 @@
 import SceneKit
 
+/**
+ PlayerPuck
+ - Custom game disc that the user plays each move with
+ - Animates from top of board to the required row
+ **/
+
+//Some magic numbers in here 🧙‍♂️🧙‍♀️
 public class PlayerPuck: GameNode {
     public init(player: Player, column: Int){
         super.init(from: player == .red ? Model.redPuck : Model.yellowPuck)
@@ -12,6 +19,7 @@ public class PlayerPuck: GameNode {
         super.init(coder: aDecoder)
     }
     
+    //Drop the current puck the necessary row
     public func drop(to row: Int){
         //We always want them to be travelling at the same speed
         //So we use Time = Distance/Speed

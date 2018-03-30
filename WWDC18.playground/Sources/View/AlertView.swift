@@ -1,6 +1,12 @@
 import Foundation
 import UIKit
 
+/**
+ Alert View
+    - Custom UI view that represents an alert
+    - Automatically dismisses when user presses "Okay"
+ **/
+
 public class AlertView: UIView {
     var callback: (() -> ())?
     

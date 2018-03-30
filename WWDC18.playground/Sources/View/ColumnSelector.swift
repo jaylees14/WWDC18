@@ -1,5 +1,9 @@
 import SceneKit
 
+/**
+ Column Selector
+ - Custom game node that represents the 🔻 above each column
+ **/
 public class ColumnSelector: GameNode {
     public init(for column: Int){
         super.init(from: Model.triangle)
