@@ -7,7 +7,6 @@ import Foundation
  
  **/
 
-
 public struct Reducer<S, A> {
     let reduce: (S, A) -> S
 }

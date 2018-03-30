@@ -20,18 +20,19 @@ public class GameLogic: GameLogicDelegate {
     typealias Move = Int
     public let boardSize = (rows: 6, cols: 7)
     private var store: Store<GameState, Move>
-    private let moveReducer = Reducer<GameState, Move> { state, column in
-        let row = state.board[column].filter { $0 == nil }.count - 1
-        var board = state.board
-        board[column][row] = state.currentPlayer
-        return GameState(board: board, currentPlayer: state.currentPlayer.other(), previousMove: (row: row, column: column))
-    }
+    private let moveReducer: Reducer<GameState, Move>
     public var layoutDelegate: GameLayoutDelegate?
     
     //MARK: - Initializer
     public init(){
         let emptyBoard: GameState.Board = Array(repeating: Array(repeating: nil, count: 6), count: 7)
         let initialState = GameState(board: emptyBoard, currentPlayer: .red)
+        moveReducer = Reducer<GameState, Move> { state, column in
+            var board = state.board
+            let row = state.board[column].filter { $0 == nil }.count - 1
+            board[column][row] = state.currentPlayer
+            return GameState(board: board, currentPlayer: state.currentPlayer.other(), previousMove: (row: row, column: column))
+        }
         store = Store(reducer: moveReducer, initialState: initialState)
         store.subscribe(determineOutcome)
         store.subscribe(columnLimit)
@@ -60,10 +61,7 @@ public class GameLogic: GameLogicDelegate {
         //Check if anyone has won, or is a draw
         if hasWon(board: gameState.board, player: gameState.currentPlayer.other()) {
             layoutDelegate?.gameWon(by: gameState.currentPlayer.other())
-        } else {
-            for row in gameState.board {
-                if row.contains(where: {$0 == nil}) { return }
-            }
+        } else if gameState.board.filter({$0.contains(where: {$0 == nil})}).count == 0 {
             layoutDelegate?.gameDrawn()
         }
     }
