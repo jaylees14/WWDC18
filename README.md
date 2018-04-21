@@ -6,5 +6,5 @@ I developed a concept similar to Redux to hold a “store” of state for the ap
 
 Here's a snapshot of the game:
 
-![IMG_0097](/Users/jay/Documents/University/Year2/Misc/WWDC18/GamePreview.png)
+![IMGPreview](GamePreview.png)
 
